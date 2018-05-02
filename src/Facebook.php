@@ -55,7 +55,7 @@ class Facebook
      * instace (initial data)
      */
     public function instance(){
-        $this->fb = new Facebook\Facebook([
+        $this->fb = new \Facebook\Facebook([
             'app_id' => $this->app_id, // Replace {app-id} with your app id
             'app_secret' => $this->secret_id,
             'default_graph_version' => $this->version,
@@ -78,7 +78,8 @@ class Facebook
         $permissions = $this->permissions;
         $loginUrl = $helper->getLoginUrl($this->callback_url, $permissions);
         if(!$redirect){return $loginUrl;}
-        header("Location:" + $loginUrl);
+        header("Location:". $loginUrl);
+        exit();
     }
 
     /**
@@ -95,11 +96,11 @@ class Facebook
         }
         try {
             $accessToken = $helper->getAccessToken();
-        } catch(Facebook\Exceptions\FacebookResponseException $e) {
+        } catch(\Facebook\Exceptions\FacebookResponseException $e) {
             // When Graph returns an error
             echo 'Graph returned an error: ' . $e->getMessage();
             exit;
-        } catch(Facebook\Exceptions\FacebookSDKException $e) {
+        } catch(\Facebook\Exceptions\FacebookSDKException $e) {
             // When validation fails or other local issues
             echo 'Facebook SDK returned an error: ' . $e->getMessage();
             exit;
@@ -125,7 +126,7 @@ class Facebook
         if (! $accessToken->isLongLived()) {
             try {
                 $accessToken = $oAuth2Client->getLongLivedAccessToken($accessToken);
-            } catch (Facebook\Exceptions\FacebookSDKException $e) {
+            } catch (\Facebook\Exceptions\FacebookSDKException $e) {
                 echo "<p>Error getting long-lived access token: " . $helper->getMessage() . "</p>\n\n";
                 exit;
             }
@@ -133,6 +134,7 @@ class Facebook
 
         $_SESSION['fb_access_token'] = (string) $accessToken;
         $this->accessToken = $accessToken;
+        $this->setToken();
         return $accessToken;
     }
 
@@ -164,14 +166,15 @@ class Facebook
         $this->accounts = $fb->get('/me/accounts',$accessToken);
         $pages = $this->accounts->getGraphEdge()->asArray();
         $result = [];
-        foreach ($this->accounts as $key) {
+        foreach ($pages as $key) {
             if ($key['name'] == $this->name_as_id) {
+
                 $post = $fb->post('/' . $key['id'] . '/feed',
                     array(
                         'message'=> $messsage,
                         'link' => $link,
                     ),
-                $key['access_token']);
+                    $key['access_token']);
                 $post = $post->getGraphNode()->asArray();
                 $result[] = $post;
             }

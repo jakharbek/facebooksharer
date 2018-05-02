@@ -47,14 +47,16 @@ class Facebook
     /**
      * initial data
      */
-    public function init(){
+    public function init()
+    {
         $this->instance();
     }
 
     /**
      * instace (initial data)
      */
-    public function instance(){
+    public function instance()
+    {
         $this->fb = new \Facebook\Facebook([
             'app_id' => $this->app_id, // Replace {app-id} with your app id
             'app_secret' => $this->secret_id,
@@ -77,8 +79,10 @@ class Facebook
         $helper = $this->helper;
         $permissions = $this->permissions;
         $loginUrl = $helper->getLoginUrl($this->callback_url, $permissions);
-        if(!$redirect){return $loginUrl;}
-        header("Location:". $loginUrl);
+        if (!$redirect) {
+            return $loginUrl;
+        }
+        header("Location:" . $loginUrl);
         exit();
     }
 
@@ -87,7 +91,8 @@ class Facebook
      * Этот метод обратный связи
      * Данный метод в должны вставить в скрипт обратный связи
      */
-    public function callback(){
+    public function callback()
+    {
         $app_id = $this->app_id;
         $fb = $this->fb;
         $helper = $this->helper;
@@ -96,17 +101,17 @@ class Facebook
         }
         try {
             $accessToken = $helper->getAccessToken();
-        } catch(\Facebook\Exceptions\FacebookResponseException $e) {
+        } catch (\Facebook\Exceptions\FacebookResponseException $e) {
             // When Graph returns an error
             echo 'Graph returned an error: ' . $e->getMessage();
             exit;
-        } catch(\Facebook\Exceptions\FacebookSDKException $e) {
+        } catch (\Facebook\Exceptions\FacebookSDKException $e) {
             // When validation fails or other local issues
             echo 'Facebook SDK returned an error: ' . $e->getMessage();
             exit;
         }
 
-        if (! isset($accessToken)) {
+        if (!isset($accessToken)) {
             if ($helper->getError()) {
                 header('HTTP/1.0 401 Unauthorized');
                 echo "Error: " . $helper->getError() . "\n";
@@ -123,7 +128,7 @@ class Facebook
         $tokenMetadata = $oAuth2Client->debugToken($accessToken);
         $tokenMetadata->validateAppId($app_id);
         $tokenMetadata->validateExpiration();
-        if (! $accessToken->isLongLived()) {
+        if (!$accessToken->isLongLived()) {
             try {
                 $accessToken = $oAuth2Client->getLongLivedAccessToken($accessToken);
             } catch (\Facebook\Exceptions\FacebookSDKException $e) {
@@ -132,7 +137,7 @@ class Facebook
             }
         }
 
-        $_SESSION['fb_access_token'] = (string) $accessToken;
+        $_SESSION['fb_access_token'] = (string)$accessToken;
         $this->accessToken = $accessToken;
         $this->setToken();
         return $accessToken;
@@ -141,7 +146,8 @@ class Facebook
     /**
      * @return bool|string
      */
-    public function setToken(){
+    public function setToken()
+    {
         $file = "facebook.token";
         return file_put_contents($file, $this->accessToken);
     }
@@ -149,21 +155,24 @@ class Facebook
     /**
      * @return bool|string
      */
-    public function getToken(){
+    public function getToken()
+    {
         $file = "facebook.token";
         return file_get_contents($file);
     }
 
     /**
      * @param string $messsage
+     * @param string $link
      * @return array
      */
-    public function post($messsage = "",$link = ""){
+    public function post($messsage = "", $link = "")
+    {
         $app_id = $this->app_id;
         $fb = $this->fb;
         $helper = $this->helper;
         $accessToken = $this->getToken();
-        $this->accounts = $fb->get('/me/accounts',$accessToken);
+        $this->accounts = $fb->get('/me/accounts', $accessToken);
         $pages = $this->accounts->getGraphEdge()->asArray();
         $result = [];
         foreach ($pages as $key) {
@@ -171,7 +180,7 @@ class Facebook
 
                 $post = $fb->post('/' . $key['id'] . '/feed',
                     array(
-                        'message'=> $messsage,
+                        'message' => $messsage,
                         'link' => $link,
                     ),
                     $key['access_token']);
@@ -180,6 +189,27 @@ class Facebook
             }
         }
         return $result;
+    }
+
+
+    /**
+     * @param $secret_id
+     * @param $app_id
+     * @param $login_url
+     * @param $callback_url
+     * @param $name_as_id
+     * @return Facebook
+     */
+    public static function &getInstance($secret_id, $app_id, $login_url, $callback_url,$name_as_id)
+    {
+        $fb = new Facebook();
+        $fb->secret_id = $secret_id;
+        $fb->app_id = $app_id;
+        $fb->login_url = $login_url;
+        $fb->callback_url = $callback_url;
+        $fb->name_as_id = $name_as_id;
+        $fb->init();
+        return $fb;
     }
 
 }
